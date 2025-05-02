@@ -85,14 +85,13 @@
           document.body.appendChild(btn);
           btn.click();
         }
-        
+        document.getElementById('wxqrcode').addEventListener('load', () => {
+            sendStat('show');
+        });
         // 初始化
         if(isWechat){
           document.addEventListener('WeixinJSBridgeReady', setupLongPress);
         } else {
-        document.getElementById('wxqrcode').addEventListener('load', () => {
-            sendStat('show');
-        });
           setupLongPress();
         }
     </script>
