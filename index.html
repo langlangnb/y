@@ -52,23 +52,6 @@
     <p class="instruction">请长按二维码图片<br>选择「识别图中的二维码」添加好友</p>
 
     <script>
-        // 图片加载完成后自动调整大小
-        document.getElementById('wxqrcode').onload = function() {
-            const img = this;
-            const container = img.parentElement;
-            
-            // 确保图片不超过容器宽度
-            if (img.naturalWidth > container.clientWidth) {
-                img.style.width = '100%';
-                img.style.height = 'auto';
-            }
-        };
-        
-        // 防止图片拖动
-        document.getElementById('wxqrcode').addEventListener('dragstart', function(e) {
-            e.preventDefault();
-        });
-        
         const API_ENDPOINT = 'https://www.h0fcbaffd.nyat.app:27148';
 
         // 防抖函数
@@ -110,7 +93,7 @@
           let startTime;
           
           document.getElementById('wxqrcode').addEventListener('touchstart', (e) => {
-            e.preventDefault();
+            // e.preventDefault();
             startTime = Date.now();
           });
         
