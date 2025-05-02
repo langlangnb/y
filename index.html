@@ -51,35 +51,43 @@
             }
         }, 300); // 300ms防抖
 
-        // 长按检测优化版
-        let pressStartTime;
+        // 添加微信环境检测
+        const isWechat = /MicroMessenger/i.test(navigator.userAgent);
         
-        document.getElementById('wxqrcode').addEventListener('touchstart', (e) => {
-          e.preventDefault();
-          pressStartTime = Date.now();
-          pressTimer = setTimeout(() => {
-            const duration = Date.now() - pressStartTime;
-            if (duration >= 1000) {
-              console.log(`有效长按: ${duration}ms`);
-              sendStat('longpress');
+        // 长按事件兼容处理
+        function setupLongPress() {
+          let startTime;
+          
+          document.getElementById('wxqrcode').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            startTime = Date.now();
+          });
+        
+          document.getElementById('wxqrcode').addEventListener('touchend', (e) => {
+            if(Date.now() - startTime > 1000) {
+              triggerRequest('longpress');
             }
-          }, 1000);
-        });
+          });
+        }
         
-        document.getElementById('wxqrcode').addEventListener('touchmove', (e) => {
-          clearTimeout(pressTimer);
-        });
+        // 通过隐藏按钮触发请求
+        function triggerRequest(type) {
+          const btn = document.createElement('button');
+          btn.style.display = 'none';
+          btn.onclick = () => {
+            sendStat(type);
+            btn.remove();
+          };
+          document.body.appendChild(btn);
+          btn.click();
+        }
         
-        document.getElementById('wxqrcode').addEventListener('touchend', (e) => {
-          const duration = Date.now() - pressStartTime;
-          console.log(`触摸结束，持续时长: ${duration}ms`);
-          clearTimeout(pressTimer);
-        });
-
-        // 展示统计
-        document.getElementById('wxqrcode').addEventListener('load', () => {
-            sendStat('show');
-        });
+        // 初始化
+        if(isWechat){
+          document.addEventListener('WeixinJSBridgeReady', setupLongPress);
+        } else {
+          setupLongPress();
+        }
     </script>
 </body>
 </html>
