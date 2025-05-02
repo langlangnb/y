@@ -30,6 +30,14 @@
             try {
                 const response = await fetch(`${API_ENDPOINT}?type=${type}`, {
                     method: 'POST'
+                }).then(response => {
+                  if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                  }
+                  return response.json();
+                })
+                .catch(error => {
+                  console.error('API Error:', error);
                 });
                 
                 if (!response.ok) {
