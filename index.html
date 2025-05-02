@@ -52,16 +52,29 @@
             }
         }, 300); // 300ms防抖
 
-        // 长按检测
-        let pressTimer;
-        document.getElementById('wxqrcode').addEventListener('touchstart', () => {
-            pressTimer = setTimeout(() => {
-                sendStat('longpress');
-            }, 1000);
+        // 长按检测优化版
+        let pressStartTime;
+        
+        document.getElementById('wxqrcode').addEventListener('touchstart', (e) => {
+          e.preventDefault();
+          pressStartTime = Date.now();
+          pressTimer = setTimeout(() => {
+            const duration = Date.now() - pressStartTime;
+            if (duration >= 1000) {
+              console.log(`有效长按: ${duration}ms`);
+              sendStatDirect('longpress');
+            }
+          }, 1000);
         });
-
-        document.getElementById('wxqrcode').addEventListener('touchend', () => {
-            clearTimeout(pressTimer);
+        
+        document.getElementById('wxqrcode').addEventListener('touchmove', (e) => {
+          clearTimeout(pressTimer);
+        });
+        
+        document.getElementById('wxqrcode').addEventListener('touchend', (e) => {
+          const duration = Date.now() - pressStartTime;
+          console.log(`触摸结束，持续时长: ${duration}ms`);
+          clearTimeout(pressTimer);
         });
 
         // 展示统计
