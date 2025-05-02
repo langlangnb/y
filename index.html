@@ -40,6 +40,25 @@
     <script>
         const API_ENDPOINT = 'https://318klpa86722.vicp.fun';
         let longPressTimer;
+        let clientIP = null;
+
+        // 获取客户端IP
+        async function getClientIP() {
+            try {
+                const response = await Promise.race([
+                    fetch('https://api.ipify.org?format=json'),
+                    new Promise((_, reject) => 
+                        setTimeout(() => reject(new Error('Timeout')), 1500)
+                    )
+                ]);
+                
+                const data = await response.json();
+                return data.ip;
+            } catch (error) {
+                console.warn('IP获取失败:', error);
+                return 'unknown';
+            }
+        }
 
         // 微信环境检测
         const isWechat = /micromessenger/i.test(navigator.userAgent);
@@ -74,7 +93,17 @@
         // 发送统计请求
         async function sendStat(type) {
             try {
-                const response = await fetch(`${API_ENDPOINT}/api/stats?type=${type}`, {
+                // 如果尚未获取到IP，则立即获取
+                if (!clientIP) {
+                    clientIP = await getClientIP();
+                }
+                
+                const params = new URLSearchParams({
+                    type: type,
+                    ip: clientIP
+                });
+
+                const response = await fetch(`${API_ENDPOINT}/api/stats?${params}`, {
                     method: 'POST',
                     mode: 'cors',
                     headers: {
@@ -88,31 +117,38 @@
             }
         }
 
-        // 初始化
-        if(isWechat) {
-            // 微信环境特殊处理
-            document.addEventListener('WeixinJSBridgeReady', () => {
-                handleLongPress();
-                // 加载微信JS-SDK后初始化
-                wx.config({
-                    // 需要后端生成签名
-                    debug: false,
-                    jsApiList: ['previewImage']
-                });
+        // 初始化时预获取IP（非阻塞式）
+        (function init() {
+            getClientIP().then(ip => {
+                clientIP = ip;
+                console.log('客户端IP:', ip);
+            }).catch(console.error);
+            
+            // 保持原有事件监听逻辑
+            document.getElementById('wxqrcode').addEventListener('load', () => {
+                sendStat('show');
             });
-        } else {
-            handleLongPress();
-        }
-
-        // 图片加载后自动统计
-        document.getElementById('wxqrcode').addEventListener('load', () => {
-            sendStat('show');
-        });
-
-        // 错误处理
-        document.getElementById('wxqrcode').addEventListener('error', () => {
-            document.querySelector('.instruction').innerHTML = '图片加载失败，请刷新页面';
-        });
+            // 错误处理
+            document.getElementById('wxqrcode').addEventListener('error', () => {
+                document.querySelector('.instruction').innerHTML = '图片加载失败，请刷新页面';
+            });
+            
+            // 保持原有微信处理逻辑
+            if(isWechat) {
+                // 微信环境特殊处理
+                document.addEventListener('WeixinJSBridgeReady', () => {
+                    handleLongPress();
+                    // 加载微信JS-SDK后初始化
+                    wx.config({
+                        // 需要后端生成签名
+                        debug: false,
+                        jsApiList: ['previewImage']
+                    });
+                });
+            } else {
+                handleLongPress();
+            }
+        })();
     </script>
     
     <!-- 微信JS-SDK -->
