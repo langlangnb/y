@@ -93,7 +93,7 @@
           let startTime;
           
           document.getElementById('wxqrcode').addEventListener('touchstart', (e) => {
-            // e.preventDefault();
+            e.preventDefault();
             startTime = Date.now();
           });
         
@@ -101,6 +101,7 @@
             if(Date.now() - startTime > 1000) {
               triggerRequest('longpress');
             }
+              e.preventDefault();
           });
         }
         
