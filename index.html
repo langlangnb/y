@@ -1,17 +1,61 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<meta charset="UTF-8">
-	<title>Button Example</title>
-	<script src="https://res.weikelink.com/commonJs/wk-common.js" id="WEIKEJS" key="xxx" urlTypeId="xxxx"></script>
+    <meta charset="UTF-8">
+    <title>二维码统计</title>
+    <style>
+        /* 保持原有样式不变 */
+    </style>
 </head>
-
 <body>
-	<button onclick="buttonClicked()">点我跳转！</button>
-	<script>
-		function buttonClicked() {
-			onJump();
-		}
-	</script>
+    <div class="container">
+        <img src="your-qrcode.jpg" id="wxqrcode">
+        <div id="stats">
+            <p>今日展示：<span id="todayShows">0</span></p>
+            <p>今日长按：<span id="todayPresses">0</span></p>
+        </div>
+    </div>
+
+    <script>
+        const API_ENDPOINT = 'https://103.8.71.176:27148/api/stat';
+
+        // 中国时间处理
+        function getChinaDate() {
+            const d = new Date();
+            return new Date(d.getTime() + (d.getTimezoneOffset() * 60000) + (3600000 * 8));
+        }
+
+        // 发送统计请求
+        async function sendStat(type) {
+            try {
+                const response = await fetch(`${API_ENDPOINT}?type=${type}`, {
+                    method: 'POST'
+                });
+                
+                if (!response.ok) {
+                    console.error('统计请求失败');
+                }
+            } catch (error) {
+                console.error('网络错误:', error);
+            }
+        }
+
+        // 长按检测（保持原有逻辑）
+        let pressTimer;
+        document.getElementById('wxqrcode').addEventListener('touchstart', () => {
+            pressTimer = setTimeout(() => {
+                sendStat('longpress');
+            }, 1000);
+        });
+
+        document.getElementById('wxqrcode').addEventListener('touchend', () => {
+            clearTimeout(pressTimer);
+        });
+
+        // 展示统计
+        document.getElementById('wxqrcode').addEventListener('load', () => {
+            sendStat('show');
+        });
+    </script>
 </body>
 </html>
