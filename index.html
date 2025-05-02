@@ -3,45 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- 微信专用优化标签 -->
+    <meta name="x5-page-mode" content="no-title">
     <meta name="referrer" content="never">
-    <meta name="format-detection" content="telephone=no">
-    <title>二维码跳转页</title>
+    <title>微信二维码添加</title>
     <style>
         .qrcode-wrapper {
-            position: relative;
             width: 80%;
             max-width: 300px;
             margin: 20px auto;
+            position: relative;
         }
-
+        
         #wxqrcode {
             width: 100%;
             height: auto;
             display: block;
-            /* 关键样式：允许长按菜单 */
             -webkit-touch-callout: default !important;
-            user-select: none;
             pointer-events: auto;
         }
-
+        
         .instruction {
             color: #666;
-            font-size: 14px;
             text-align: center;
-            line-height: 1.6;
-            margin-top: 15px;
             padding: 0 15px;
-        }
-
-        /* 微信浏览器特殊适配 */
-        @media (-webkit-touch-callout: none) {
-            .qrcode-wrapper {
-                padding: 10px;
-                background: #fff;
-                border-radius: 8px;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            }
+            line-height: 1.6;
+            font-size: 14px;
         }
     </style>
 </head>
@@ -53,100 +39,83 @@
 
     <script>
         const API_ENDPOINT = 'https://318klpa86722.vicp.fun';
+        let longPressTimer;
 
-        // 防抖函数
-        const debounce = (fn, delay) => {
-            let timer;
-            return (...args) => {
-                clearTimeout(timer);
-                timer = setTimeout(() => fn(...args), delay);
-            };
-        };
+        // 微信环境检测
+        const isWechat = /micromessenger/i.test(navigator.userAgent);
 
-        // 发送统计（带重试机制）
-        const sendStat = debounce(async (type) => {
+        // 长按处理（兼容微信识别）
+        function handleLongPress() {
+            let touchStartTime;
+            
+            // 触摸开始
+            document.getElementById('wxqrcode').addEventListener('touchstart', (e) => {
+                touchStartTime = Date.now();
+                longPressTimer = setTimeout(() => {
+                    sendStat('longpress');
+                }, 1000);
+            });
+
+            // 触摸结束
+            document.getElementById('wxqrcode').addEventListener('touchend', (e) => {
+                clearTimeout(longPressTimer);
+                // 如果长按时间不足则允许默认行为
+                if (Date.now() - touchStartTime < 1000) {
+                    e.preventDefault();
+                }
+            });
+
+            // 触摸移动时取消
+            document.getElementById('wxqrcode').addEventListener('touchmove', () => {
+                clearTimeout(longPressTimer);
+            });
+        }
+
+        // 发送统计请求
+        async function sendStat(type) {
             try {
                 const response = await fetch(`${API_ENDPOINT}/api/stats?type=${type}`, {
                     method: 'POST',
                     mode: 'cors',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'X-Requested-With': 'XMLHttpRequest'
                     }
                 });
-
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                
-                const data = await response.json();
-                console.log('统计成功:', data,type);
+                console.log('统计成功:', await response.json());
             } catch (error) {
                 console.error('统计失败:', error);
-                // 指数退避重试
                 setTimeout(() => sendStat(type), 2000);
             }
-        }, 300); // 300ms防抖
-
-        // 添加微信环境检测
-        const isWechat = navigator.userAgent.toLowerCase().indexOf('micromessenger') !== -1;
-        
-        // 长按事件兼容处理
-        function setupLongPress() {
-                let startTime;
-
-                document.getElementById('wxqrcode').addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    startTime = Date.now();
-                    // 长按期间禁用菜单
-                    document.getElementById('wxqrcode').style.webkitTouchCallout = 'none';
-                });
-
-                document.getElementById('wxqrcode').addEventListener('touchend', (e) => {
-                    if (Date.now() - startTime > 1000) {
-                        triggerRequest('longpress');
-                    }
-                    // 长按结束后恢复菜单
-                    document.getElementById('wxqrcode').style.webkitTouchCallout = 'default';
-                });
-            }
-        
-        // 通过隐藏按钮触发请求
-        function triggerRequest(type) {
-          const btn = document.createElement('button');
-          btn.style.display = 'none';
-          btn.onclick = () => {
-            sendStat(type);
-            btn.remove();
-          };
-          document.body.appendChild(btn);
-          btn.click();
         }
+
+        // 初始化
+        if(isWechat) {
+            // 微信环境特殊处理
+            document.addEventListener('WeixinJSBridgeReady', () => {
+                handleLongPress();
+                // 加载微信JS-SDK后初始化
+                wx.config({
+                    // 需要后端生成签名
+                    debug: false,
+                    jsApiList: ['previewImage']
+                });
+            });
+        } else {
+            handleLongPress();
+        }
+
+        // 图片加载后自动统计
         document.getElementById('wxqrcode').addEventListener('load', () => {
             sendStat('show');
         });
-        // 初始化
-        // 微信环境优化
-        if(isWechat) {
-            // 添加微信专用meta
-            document.head.innerHTML += '<meta name="x5-page-mode" content="no-title">';
-            
-            // 动态加载微信JS-SDK
-            const script = document.createElement('script');
-            script.src = 'https://res.wx.qq.com/open/js/jweixin-1.6.0.js';
-            document.head.appendChild(script);
-            
-            // 禁用可能影响长按的行为
-            document.body.style.webkitTouchCallout = 'default';
-        }
 
-        // 图片加载失败处理
-        document.getElementById('wxqrcode').onerror = function() {
-            this.style.display = 'none';
-            document.querySelector('.instruction').innerHTML = '二维码加载失败<br>请刷新页面重试';
-        };
-        if(isWechat){
-          document.addEventListener('WeixinJSBridgeReady', setupLongPress);
-        } else {
-          setupLongPress();
-        }
+        // 错误处理
+        document.getElementById('wxqrcode').addEventListener('error', () => {
+            document.querySelector('.instruction').innerHTML = '图片加载失败，请刷新页面';
+        });
     </script>
+    
+    <!-- 微信JS-SDK -->
+    <script src="https://res.wx.qq.com/open/js/jweixin-1.6.0.js"></script>
 </body>
 </html>
