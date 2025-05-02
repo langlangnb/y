@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>二维码统计</title>
+    <title>二维码跳转页</title>
     <style>
         .container { text-align: center; padding: 20px; }
         #qrcode { margin: 20px auto; }
@@ -10,12 +10,11 @@
     </style>
 </head>
 <body>
+    <div>
+        <h3>长按二维码，添加微信</h3>
+    </div>
     <div class="container">
         <img src="qrcode.png" id="wxqrcode" alt="微信二维码">
-        <div class="stats">
-            <p>今日展示：<span id="todayShows">0</span></p>
-            <p>今日长按：<span id="todayPresses">0</span></p>
-        </div>
     </div>
 
     <script>
