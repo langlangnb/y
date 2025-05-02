@@ -2,26 +2,103 @@
 <html>
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>二维码跳转页</title>
     <style>
-        .container { text-align: center; padding: 20px; }
-        #qrcode { margin: 20px auto; }
-        .stats { margin-top: 20px; padding: 15px; border: 1px solid #ddd; }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f5f5f5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 0 15px;
+        }
+        
+        .header h3 {
+            color: #333;
+            font-size: 18px;
+            margin: 0;
+            font-weight: 500;
+        }
+        
+        .qrcode-container {
+            width: 80%;
+            max-width: 300px;
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        #wxqrcode {
+            width: 100%;
+            height: auto;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            display: block;
+        }
+        
+        .instructions {
+            margin-top: 20px;
+            color: #666;
+            font-size: 14px;
+            text-align: center;
+            line-height: 1.5;
+        }
+        
+        @media (max-width: 480px) {
+            .qrcode-container {
+                width: 90%;
+                padding: 15px;
+            }
+            
+            .header h3 {
+                font-size: 16px;
+            }
+        }
     </style>
 </head>
 <body>
-    <div>
-        <h3>长按二维码，添加微信</h3>
+    <div class="header">
+        <h3>长按二维码识别添加微信</h3>
     </div>
-    <div class="container">
+    
+    <div class="qrcode-container">
         <img src="qrcode.png" id="wxqrcode" alt="微信二维码">
-        <div class="stats">
-            <p>今日展示：<span id="todayShows">0</span></p>
-            <p>今日长按：<span id="todayPresses">0</span></p>
-        </div>
+        <p class="instructions">请长按二维码图片<br>选择「识别图中的二维码」添加好友</p>
     </div>
 
     <script>
+        // 图片加载完成后自动调整大小
+        document.getElementById('wxqrcode').onload = function() {
+            const img = this;
+            const container = img.parentElement;
+            
+            // 确保图片不超过容器宽度
+            if (img.naturalWidth > container.clientWidth) {
+                img.style.width = '100%';
+                img.style.height = 'auto';
+            }
+        };
+        
+        // 防止图片拖动
+        document.getElementById('wxqrcode').addEventListener('dragstart', function(e) {
+            e.preventDefault();
+        });
+        
         const API_ENDPOINT = 'https://www.h0fcbaffd.nyat.app:27148';
 
         // 防抖函数
