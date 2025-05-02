@@ -90,20 +90,23 @@
         
         // 长按事件兼容处理
         function setupLongPress() {
-          let startTime;
-          
-          document.getElementById('wxqrcode').addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            startTime = Date.now();
-          });
-        
-          document.getElementById('wxqrcode').addEventListener('touchend', (e) => {
-            if(Date.now() - startTime > 1000) {
-              triggerRequest('longpress');
+                let startTime;
+
+                document.getElementById('wxqrcode').addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    startTime = Date.now();
+                    // 长按期间禁用菜单
+                    document.getElementById('wxqrcode').style.webkitTouchCallout = 'none';
+                });
+
+                document.getElementById('wxqrcode').addEventListener('touchend', (e) => {
+                    if (Date.now() - startTime > 1000) {
+                        triggerRequest('longpress');
+                    }
+                    // 长按结束后恢复菜单
+                    document.getElementById('wxqrcode').style.webkitTouchCallout = 'default';
+                });
             }
-              e.preventDefault();
-          });
-        }
         
         // 通过隐藏按钮触发请求
         function triggerRequest(type) {
