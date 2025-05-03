@@ -73,23 +73,11 @@
             'https://ipinfo.io/json',
             'https://api.my-ip.io/ip.json'
           ];
-        
-          // 方式3：通过Cloudflare的Trace服务
-          const getCFTrace = async () => {
-            try {
-              const res = await fetch('https://www.cloudflare.com/cdn-cgi/trace');
-              const text = await res.text();
-              return text.match(/ip=([\d.]+)/)?.[1] || null;
-            } catch {
-              return null;
-            }
-          };
-        
+                
           try {
             // 尝试顺序：WebRTC -> Cloudflare -> 公共API列表
             return await Promise.any([
               getLocalIP(),
-              getCFTrace(),
               ...publicApis.map(url => 
                 fetch(url, { signal: AbortSignal.timeout(1500) })
                   .then(r => r.json())
@@ -136,9 +124,9 @@
             try {
                 // 如果尚未获取到IP，则立即获取
                 if (!clientIP) {
-                    // clientIP = await getClientIP();
                     await getClientIP().then(ip => {
                       clientIP = ip
+                        console.log(ip)
                     });
                 }
                 
