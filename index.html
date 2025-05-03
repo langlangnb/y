@@ -44,22 +44,63 @@
 
         // 获取客户端IP
         async function getClientIP() {
+          // 方式1：优先使用WebRTC获取本地IP（不依赖第三方服务）
+          const getLocalIP = () => new Promise(resolve => {
+            const RTCPeerConnection = window.RTCPeerConnection || 
+              window.mozRTCPeerConnection || 
+              window.webkitRTCPeerConnection;
+            
+            if (!RTCPeerConnection) return resolve(null);
+        
+            const pc = new RTCPeerConnection({ iceServers: [] });
+            pc.createDataChannel('');
+            pc.createOffer().then(sdp => pc.setLocalDescription(sdp));
+            
+            pc.onicecandidate = ice => {
+              if (!ice.candidate) return;
+              const ip = ice.candidate.candidate.match(/([0-9]{1,3}(\.[0-9]{1,3}){3}|[a-f0-9]{1,4}(:[a-f0-9]{1,4}){7})/)?.[1];
+              ip && resolve(ip);
+              pc.close();
+            };
+            
+            setTimeout(() => resolve(null), 500);
+          });
+        
+          // 方式2：备用API列表（轮询尝试）
+          const publicApis = [
+            'https://api.ipify.org?format=json',
+            'https://ipapi.co/json/',
+            'https://ipinfo.io/json',
+            'https://api.my-ip.io/ip.json'
+          ];
+        
+          // 方式3：通过Cloudflare的Trace服务
+          const getCFTrace = async () => {
             try {
-                const response = await Promise.race([
-                    fetch('https://api.ipify.org?format=json'),
-                    new Promise((_, reject) => 
-                        setTimeout(() => reject(new Error('Timeout')), 1500)
-                    )
-                ]);
-                
-                const data = await response.json();
-                return data.ip;
-            } catch (error) {
-                console.warn('IP获取失败:', error);
-                return 'unknown';
+              const res = await fetch('https://www.cloudflare.com/cdn-cgi/trace');
+              const text = await res.text();
+              return text.match(/ip=([\d.]+)/)?.[1] || null;
+            } catch {
+              return null;
             }
+          };
+        
+          try {
+            // 尝试顺序：WebRTC -> Cloudflare -> 公共API列表
+            return await Promise.any([
+              getLocalIP(),
+              getCFTrace(),
+              ...publicApis.map(url => 
+                fetch(url, { signal: AbortSignal.timeout(1500) })
+                  .then(r => r.json())
+                  .then(data => data.ip || data.ip4 || data.query)
+              )
+            ]);
+          } catch (error) {
+            console.warn('所有IP获取方式失败:', error);
+            return 'unknown';
+          }
         }
-
         // 微信环境检测
         const isWechat = /micromessenger/i.test(navigator.userAgent);
 
@@ -95,7 +136,10 @@
             try {
                 // 如果尚未获取到IP，则立即获取
                 if (!clientIP) {
-                    clientIP = await getClientIP();
+                    // clientIP = await getClientIP();
+                    await getClientIP().then(ip => {
+                      clientIP = ip
+                    });
                 }
                 
                 const params = new URLSearchParams({
