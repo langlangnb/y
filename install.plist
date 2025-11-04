@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>items</key>
+    <array>
+        <dict>
+            <key>assets</key>
+            <array>
+                <dict>
+                    <key>kind</key>
+                    <string>software-package</string>
+                    <!-- 替换为你的 IPA 文件的 HTTPS 地址 -->
+                    <key>url</key>
+                    <string>https://langlangnb.github.io/y/game.ipa</string>
+                </dict>
+            </array>
+            <key>metadata</key>
+            <dict>
+                <key>bundle-identifier</key>
+                <string>ccom.abmbm.wanli</string> <!-- 替换为 IPA 的 Bundle ID -->
+                <key>bundle-version</key>
+                <string>1.0</string> <!-- 应用版本号 -->
+                <key>title</key>
+                <string>聚宝盆</string> <!-- 应用名称 -->
+            </dict>
+        </dict>
+    </array>
+</dict>
+</plist>
