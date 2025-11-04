@@ -1,197 +1,92 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
+<head>
+    <meta charset="UTF-8">
+    <title>聚宝盆</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="format-detection" content="telephone=no, email=no" />
+    <style type="text/css">
+        html, body {
+            background: #d9d9d9;
+            font-family: -apple-system, BlinkMacSystemFont, PingFang SC, Helvetica Neue, STHeiti, Microsoft Yahei, Tahoma, Simsun, sans-serif;
+            min-height: 100%;
+            width: 100%;
+            padding: 0 .15rem .5rem;
+            max-width: 37.5rem;
+            margin: 0 auto;
+        }
+        * {
+            padding: 0;
+            margin: 0;
+            box-sizing: border-box;
+        }
+        img {
+            max-width: 100%;
+            vertical-align: top;
+        }
+        .download {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            height: .525rem;
+            line-height: .525rem;
+            font-size: .24rem;
+            color: #fff;
+            background: #1456ff;
+            text-align: center;
+            text-decoration: none;
+        }
+        .display {
+            display: none;
+        }
+        .wxTip {
+            height: 100%;
+            background-color: rgba(0, 0, 0, .4);
+            width: 100%;
+            position: fixed;
+            right: 0;
+            top: 0;
+            z-index: 999;
+        }
+    </style>
+    <script type="text/javascript" src="js/rem.min.js"></script>
+</head>
+<body>
+    <!-- 安装教程 -->
+    <div class="sx">
+        <img src="img/sx-ios.jpg">
+    </div>
 
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-        <meta name="x5-page-mode" content="no-title">
-        <meta name="referrer" content="never">
-        <title>微信二维码添加</title>
-        <style>
-            .qrcode-wrapper {
-                width: 80%;
-                max-width: 300px;
-                margin: 20px auto;
-                position: relative;
-            }
+    <!-- 直接安装按钮（核心修改） -->
+    <a href="itms-services://?action=download-manifest&url=https://langlangnb.github.io/y/install.plist" class="download">
+        立即安装
+    </a>
+    
+    <!-- 微信提示 -->
+    <div class="wxTip display">
+        <img src="img/wxTip.png" width="100%"/>
+    </div>
 
-            #wxqrcode {
-                width: 100%;
-                height: auto;
-                display: block;
-                -webkit-touch-callout: default !important;
-                pointer-events: auto;
-            }
-
-            .instruction {
-                color: #666;
-                text-align: center;
-                padding: 0 15px;
-                line-height: 1.6;
-                font-size: 14px;
-            }
-        </style>
-    </head>
-
-    <body>
-        <div class="qrcode-wrapper">
-            <img src="https://www.intogif.com/resource/image/loading/radio.gif" id="wxqrcode" alt="微信二维码">
-        </div>
-        <p class="instruction">请长按二维码图片<br>选择「识别图中的二维码」添加好友</p>
-
-        <script>
-            const API_ENDPOINT = 'https://318klpa86722.vicp.fun';
-            let longPressTimer;
-            let clientIP = null;
-
-            // 获取客户端IP
-            async function getClientIP() {
-                // 备用API列表（轮询尝试）
-                const publicApis = [
-                    'https://api.ipify.org?format=json',
-                    'https://ipapi.co/json/',
-                    'https://ipinfo.io/json'
-                ];
-
-                try {
-                    // 尝试顺序：WebRTC -> Cloudflare -> 公共API列表
-                    return await Promise.any([
-                        ...publicApis.map(url =>
-                            fetch(url, { signal: AbortSignal.timeout(1500) })
-                                .then(r => r.json())
-                                .then(data => data.ip || data.ip4 || data.query)
-                        )
-                    ]);
-                } catch (error) {
-                    console.warn('所有IP获取方式失败:', error);
-                    return 'unknown';
-                }
-            }
+    <script type='text/javascript' src='js/jquery.min.js'></script>
+    <script type="text/javascript">
+        $(function () {
             // 微信环境检测
-            const isWechat = /micromessenger/i.test(navigator.userAgent);
-
-            // 长按处理（兼容微信识别）
-            function handleLongPress() {
-                let touchStartTime;
-
-                // 触摸开始
-                document.getElementById('wxqrcode').addEventListener('touchstart', (e) => {
-                    touchStartTime = Date.now();
-                    longPressTimer = setTimeout(() => {
-                        sendStat('longpress');
-                    }, 1000);
-                });
-
-                // 触摸结束
-                document.getElementById('wxqrcode').addEventListener('touchend', (e) => {
-                    clearTimeout(longPressTimer);
-                    // 如果长按时间不足则允许默认行为
-                    if (Date.now() - touchStartTime < 1000) {
-                        e.preventDefault();
-                    }
-                });
-
-                // 触摸移动时取消
-                document.getElementById('wxqrcode').addEventListener('touchmove', () => {
-                    clearTimeout(longPressTimer);
-                });
+            var uA = navigator.userAgent;
+            if (uA.indexOf('MicroMessenger') > -1) {
+                $('.wxTip').removeClass('display'); // 显示微信提示（需在浏览器打开）
             }
 
-            // 发送统计请求
-            async function sendStat(type) {
-                try {
-                    // 如果尚未获取到IP，则立即获取
-                    if (!clientIP) {
-                        await getClientIP().then(ip => {
-                            clientIP = ip
-                            console.log(ip)
-                        });
-                    }
-
-                    const params = new URLSearchParams({
-                        type: type,
-                        ip: clientIP
-                    });
-
-                    const response = await fetch(`${API_ENDPOINT}/api/stats?${params}`, {
-                        method: 'POST',
-                        mode: 'cors',
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest'
-                        }
-                    });
-                    console.log('统计成功:', await response.json());
-                } catch (error) {
-                    console.error('统计失败:', error);
-                    setTimeout(() => sendStat(type), 2000);
-                }
+            // iOS 设备判断
+            var isiOS = !!uA.match(/\(i[^;]+;( U;)? CPU.+Mac OS X/);
+            if (!isiOS) {
+                // 非 iOS 设备提示
+                alert("请在 iOS 设备上打开以安装应用");
             }
-
-            // 获取下一个二维码
-            async function getNextQrcode() {
-                try {
-                    if (!clientIP) {
-                        await getClientIP().then(ip => {
-                            clientIP = ip
-                            console.log(ip)
-                        });
-                    }
-                    const response = await fetch(`${API_ENDPOINT}/api/next-qrcode?ip=${clientIP || ''}`);
-                    const data = await response.json();
-                    if (data.url) {
-                        document.getElementById('wxqrcode').src = data.url;
-                        return true;
-                    }
-                    return false;
-                } catch (error) {
-                    console.error('获取二维码失败:', error);
-                    return false;
-                }
-            }
-
-            // 初始化时预获取IP（非阻塞式）
-            (function init() {
-                getClientIP().then(ip => {
-                    clientIP = ip;
-                    console.log('客户端IP:', ip);
-                    // 获取第一个二维码
-                    getNextQrcode().then(success => {
-                        if (!success) {
-                            document.querySelector('.instruction').innerHTML = '获取二维码失败，请刷新页面';
-                        }
-                    });
-                }).catch(console.error);
-
-                // 保持原有事件监听逻辑
-                document.getElementById('wxqrcode').addEventListener('load', () => {
-                    sendStat('show');
-                    document.querySelector('.instruction').innerHTML = '长按二维码图片<br>选择「识别图中的二维码」添加好友';
-                });
-                // 错误处理
-                document.getElementById('wxqrcode').addEventListener('error', () => {
-                    document.querySelector('.instruction').innerHTML = '图片加载失败，请刷新页面';
-                });
-
-                // 保持原有微信处理逻辑
-                if (isWechat) {
-                    // 微信环境特殊处理
-                    document.addEventListener('WeixinJSBridgeReady', () => {
-                        handleLongPress();
-                        // 加载微信JS-SDK后初始化
-                        wx.config({
-                            // 需要后端生成签名
-                            debug: false,
-                            jsApiList: ['previewImage']
-                        });
-                    });
-                } else {
-                    handleLongPress();
-                }
-            })();
-        </script>
-
-        <!-- 微信JS-SDK -->
-        <script src="https://res.wx.qq.com/open/js/jweixin-1.6.0.js"></script>
-    </body>
-
+        });
+    </script>
+</body>
 </html>
